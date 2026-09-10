@@ -2,4 +2,5 @@ const frutas = ["kiwi", "morango", "abacate", "cereja", "pera"];
 
 frutas.splice(1,1); //remove o morango do baraio
 
-console.log(frutas);
+console.log(frutas); 
+// o splice remove mas altera o inicial
