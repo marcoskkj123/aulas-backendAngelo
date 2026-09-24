@@ -74,5 +74,24 @@ app.post("/livros", (req, res) => {
     livros.push(novolivro);
     res.status(201).json(novolivro);
 });
+//delete
+app.delete("/livros", (req, res) => {
+    const id = parseInt(req.params.id);
+
+    if(isNaN(id))  {
+        return res
+            .status(400)
+            .json({mensagem: ""})
+    }
+let index_livro = livros.findIndex((livro) => {
+    return livro.idLivro ===id;
+
+});
+if(index_livro === -1) {
+    return res.status(404).json({mensagem: "Recurso n encontrado"})
+}
+livros.splice(index_livro, 1);
+res.status(204).send()
+})
 
 app.listen(3000);
