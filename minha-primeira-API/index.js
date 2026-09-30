@@ -1,97 +1,211 @@
-import express from 'express';
-const app = express();
-app.use(express.json()); // necessário para ler o body no POST
+import express from "express";
 
+function validaParametro(parametro_a_ser_validado) {
+  console.log(parametro_a_ser_validado);
+  const numero = parseInt(parametro_a_ser_validado);
+  let retorno = isNaN(numero);
+  console.log(retorno);
+}
+
+const app = express(); //primeiro pilar: instancia do express
+app.use(express.json());
+/**
+ * idLivro -> identificador / int
+ * dsTitulo -> string
+ * dsAutor -> string
+ * fgDisponivel -> boolean
+ */
+let ultimo_id = 1;
 let livros = [
-    {idLivro: 1, stTitulo: "Biografia do xxx tentation", stAutor: "Jair Bolsonaru", blDisponivel: true},
-    {idLivro: 2, stTitulo: "Dicionário do teu Pai", stAutor: "Aquele que foi comprar cigarro", blDisponivel: true},
-    {idLivro: 3, stTitulo: "A história da loja Fly", stAutor: "Eduardo de Alemeida", blDisponivel: true}
+  {
+    idLivro: 1,
+    dsTitulo: "as cronicas de narnia",
+    dsAutor: "C S Lewis",
+    fgDisponivel: true,
+  },
 ]; //banco de dados
 
-let ultimoid = 3; // último id já usado no array
-
-// os get
-app.get('/', function(req, res) {
-    res.send("seja bem-vindo a gestão de livros")
+app.get("/", function (req, res) {
+  res.send("seja bem vindo à gestao de livros");
 });
 
-app.get('/livros', (req, res) => {
-    res.json(livros)
+app.get("/livros", function (req, res) {
+  res.json(livros);
 });
 
 app.get("/livros/:id", (req, res) => {
-    //console.log(req.params.id)
-    const id = parseInt(req.params.id)
+  const id = req.params.id;
 
-    if (isNaN(id)) {
-        //console.log("caiu aq!")
-        return res.status(400)
-            .json({mensagem: "o parametro precisa ser um valido!!!"})
-    }
+  if (validaParametro(id)) {
+    //se nao for um numero
+    return res
+      .status(400) //requisicao mal formada
+      .json({ mensagem: "o parametro precisa ser um numero valido" });
+  }
 
-    //find
-    let livro = livros.find((livro) => {
-        return livro.idLivro === id;
-    });
+  let livro = livros.find((livro) => {
+    return livro.idLivro === id;
+  });
 
-    if (!livro) {
-        return res.status(404).json({mensagem: "Recurso n encontrado"})
-        // ou: return res.status(404).send();
-    }
-    //n precisaria do else pois com o return ja indica de o código acaba aq!
+  if (livro === undefined) {
+    return res.status(404).send();
+  }
 
-    res.json(livro);
-
-    console.log(livro);
+  res.json(livro);
 });
 
-//post
 app.post("/livros", (req, res) => {
-    console.log(req.body);
-    console.log("chamando post")
+  let autor_enviado = req.body.dsAutor;
+  let titulo_enviado = req.body.dsTitulo;
 
-    //body
-    const titulo_enviado = req.body.titulo;
-    const autor_enviado = req.body.autor;
+  if (!autor_enviado || !titulo_enviado) {
+    return res
+      .status(400)
+      .json({ mensagem: "dados faltando, verifique autor e titulo" });
+  }
 
-    if (!autor_enviado || !titulo_enviado) {
-        return res.status(400).json({mensagem: "Ve se o autorrr ou o titulis esta varziu!"})
-    }
+  let id_novo = ultimo_id + 1;
+  ultimo_id++;
 
-    ultimoid++;
-    let idnovo = ultimoid;
+  let novo_livro = {
+    idLivro: id_novo,
+    fgDisponivel: true,
+    dsTitulo: titulo_enviado,
+    dsAutor: autor_enviado,
+  };
 
-    let novolivro = {
-        idLivro: idnovo,
-        blDisponivel: true,
-        stTitulo: titulo_enviado,
-        stAutor: autor_enviado
-    };
+  livros.push(novo_livro); //eu adicionei um novo livro ao " banco de dados"
 
-    console.log(novolivro)
-    console.log(autor_enviado + " - " + titulo_enviado)
-
-    livros.push(novolivro);
-    res.status(201).json(novolivro);
+  res.status(201).json(novo_livro);
 });
-//delete
-app.delete("/livros", (req, res) => {
-    const id = parseInt(req.params.id);
 
-    if(isNaN(id))  {
-        return res
-            .status(400)
-            .json({mensagem: ""})
-    }
-let index_livro = livros.findIndex((livro) => {
-    return livro.idLivro ===id;
+app.delete("/livros/:id", (req, res) => {
+  const id = parseInt(req.params.id);
 
+  if (isNaN(id)) {
+    return res
+      .status(400)
+      .json({ mensagem: "identificador deve ser um numero" });
+  }
+
+  let index_livro = livros.findIndex((livro) => {
+    return livro.idLivro === id;
+  });
+
+  if (index_livro === -1) {
+    return res.status(404).send();
+  }
+
+  livros.splice(index_livro, 1);
+
+  res.sendStatus(204);
 });
-if(index_livro === -1) {
-    return res.status(404).json({mensagem: "Recurso n encontrado"})
-}
-livros.splice(index_livro, 1);
-res.status(204).send()
-})
 
-app.listen(3000);
+app.patch("/livros/:id", (req, res) => {
+  const id = parseInt(req.params.id);
+  const novo_titulo = req.body.dsTitulo;
+  const novo_autor = req.body.dsAutor;
+
+  if (isNaN(id)) {
+    return res
+      .status(400)
+      .json({ mensagem: "identificador precisa ser um numero valido" });
+  }
+
+  let index_livro = livros.findIndex((livro) => {
+    return livro.idLivro === id;
+  });
+
+  if (index_livro === -1) {
+    return res.sendStatus(404);
+  }
+
+  let livro_a_ser_atualizado = livros[index_livro];
+
+  if (novo_autor !== undefined) {
+    livro_a_ser_atualizado.dsAutor = novo_autor;
+  }
+
+  if (novo_titulo !== undefined) {
+    livro_a_ser_atualizado.dsTitulo = novo_titulo;
+  }
+});
+//imprestá
+app.patch("/livros/emprestar/:id", (req, res) => {
+  const id = parseInt(req.params.id);
+  const novo_titulo = req.body.dsTitulo;
+  const novo_autor = req.body.dsAutor;
+
+  if (isNaN(id)) {
+    return res
+      .status(400)
+      .json({ mensagem: "identificador precisa ser um numero valido" });
+  }
+
+  let index_livro = livros.findIndex((livro) => {
+    return livro.idLivro === id;
+  });
+
+  if (index_livro === -1) {
+    return res.sendStatus(404);
+  }
+
+  let livro_a_ser_atualizado = livros[index_livro];
+
+  if (novo_autor !== undefined) {
+    livro_a_ser_atualizado.dsAutor = novo_autor;
+  }
+
+  if (novo_titulo !== undefined) {
+    livro_a_ser_atualizado.dsTitulo = novo_titulo;
+  }
+  
+    
+    if (livro_a_ser_atualizado.fgDisponivel) {
+        livro_a_ser_atualizado.fgDisponivel = false
+  } else {
+        res.status(409).json({mensagem:"Livro n disponível!"})
+  }
+
+  res.sendStatus(204)
+});
+//devorver
+app.patch("/livros/devolver/:id", (req, res) => {
+  const id = parseInt(req.params.id);
+  const novo_titulo = req.body.dsTitulo;
+  const novo_autor = req.body.dsAutor;
+
+  if (isNaN(id)) {
+    return res
+      .status(400)
+      .json({ mensagem: "identificador precisa ser um numero valido" });
+  }
+
+  let index_livro = livros.findIndex((livro) => {
+    return livro.idLivro === id;
+  });
+
+  if (index_livro === -1) {
+    return res.sendStatus(404);
+  }
+
+  let livro_a_ser_atualizado = livros[index_livro];
+
+  if (novo_autor !== undefined) {
+    livro_a_ser_atualizado.dsAutor = novo_autor;
+  }
+
+  if (novo_titulo !== undefined) {
+    livro_a_ser_atualizado.dsTitulo = novo_titulo;
+  }
+
+  if (livro_a_ser_atualizado.fgDisponivel) {
+        livro_a_ser_atualizado.fgDisponivel = true
+  } else {
+        res.status(409).json({mensagem:"tu nao tem o livro!"})
+  }
+
+  res.sendStatus(204)
+});
+
+app.listen(3000); //terceiro pilar, porta a ser ouvida
